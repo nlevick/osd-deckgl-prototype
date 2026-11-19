@@ -12,22 +12,28 @@ import { highsmithDzi } from './viewer/imageSource';
 
 const imageStatus = document.querySelector<HTMLElement>('#image-status')!;
 const imageStatusPanel = imageStatus.parentElement!;
+const graphicsStatus = document.querySelector<HTMLElement>('#graphics-status')!;
 const retry = document.querySelector<HTMLButtonElement>('#image-retry')!;
 const scene = document.querySelector<HTMLElement>('#scene')!;
+const dataControls = document.querySelector<HTMLFieldSetElement>('#data-controls')!;
 const viewer = createViewer(document.querySelector<HTMLElement>('#image-viewer')!);
 const controls = new AbortController();
-viewer.addHandler('before-destroy', () => controls.abort());
 
-let overlay: DeckOverlay | undefined;
 type Dataset = {
   key: string;
   layer: ReturnType<typeof createConfettiLayer>;
   pathsById: Map<string, ConfettiPath>;
 };
 let dataset: Dataset | undefined;
+let overlay: DeckOverlay | undefined;
+
+viewer.addHandler('before-destroy', () => {
+  controls.abort();
+  dataset = undefined;
+});
 
 const showSelection = connectSelectionReadout(
-  document.querySelector<HTMLFieldSetElement>('#data-controls')!,
+  dataControls,
   () => selectPath(null),
   controls.signal,
 );
@@ -57,6 +63,7 @@ function resetInteraction() {
 }
 
 function renderConfetti(image: OpenSeadragon.TiledImage) {
+  if (dataControls.hidden) return;
   const { x: width, y: height } = image.getContentSize();
   const { count, seed } = viewerState;
   const key = `${seed}:${count}:${width}:${height}`;
@@ -75,12 +82,23 @@ function renderConfetti(image: OpenSeadragon.TiledImage) {
   if (overlay) {
     overlay.setLayers(layers);
   } else {
-    overlay = new DeckOverlay(scene, viewer, image, layers, {
-      onHover: hoverPath,
-      onSelect: selectPath,
-      onDestroy: resetInteraction,
-    });
+    try {
+      overlay = new DeckOverlay(scene, viewer, image, layers, {
+        onHover: hoverPath,
+        onSelect: selectPath,
+        onDestroy: resetInteraction,
+        onError: showGraphicsError,
+      });
+    } catch (error) {
+      showGraphicsError(error);
+    }
   }
+}
+
+function showGraphicsError(error: unknown) {
+  console.error('The WebGL overlay is unavailable', error);
+  dataControls.hidden = true;
+  graphicsStatus.textContent = 'The WebGL overlay is unavailable';
 }
 
 function showImageStatus(message: string) {
@@ -93,6 +111,8 @@ function openImage() {
   showImageStatus('');
   retry.hidden = true;
   imageStatusPanel.append(retry);
+  graphicsStatus.textContent = '';
+  dataControls.hidden = false;
   viewer.open({ tileSource: highsmithDzi });
 }
 
@@ -115,10 +135,10 @@ viewer.addHandler('tile-load-failed', ({ tiledImage }) => {
     showImageStatus('Some Highsmith tiles could not load.');
   }
 });
-retry.addEventListener('click', openImage);
+retry.addEventListener('click', openImage, { signal: controls.signal });
 
-connectCameraControls(document.querySelector<HTMLFieldSetElement>('#camera-controls')!, viewer);
-connectDataControls(document.querySelector<HTMLFieldSetElement>('#data-controls')!, () => {
+connectCameraControls(document.querySelector<HTMLFieldSetElement>('#camera-controls')!, viewer, controls.signal);
+connectDataControls(dataControls, () => {
   showSelection(null);
   const image = viewer.world.getItemAt(0);
   if (image) renderConfetti(image);

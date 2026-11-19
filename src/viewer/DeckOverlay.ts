@@ -1,4 +1,4 @@
-import { Deck, OrthographicView, type Layer } from '@deck.gl/core';
+import { Deck, OrthographicView, type DeckProps, type Layer } from '@deck.gl/core';
 import type OpenSeadragon from 'openseadragon';
 import type { ConfettiPath } from '../data/confetti';
 import { createHover, type PointerPosition } from './hover';
@@ -10,6 +10,7 @@ type InteractionCallbacks = {
   onHover: (id: string | null) => void;
   onSelect: (id: string | null) => void;
   onDestroy: () => void;
+  onError: (error: unknown) => void;
 };
 
 export class DeckOverlay {
@@ -26,6 +27,7 @@ export class DeckOverlay {
   private flipPending = false;
   private animating = false;
   private rendered = false;
+  private failed = false;
   private destroyed = false;
 
   constructor(
@@ -36,32 +38,43 @@ export class DeckOverlay {
     private readonly callbacks: InteractionCallbacks,
   ) {
     this.host.className = 'deck-overlay';
-    parent.append(this.host);
+    const { signal } = this.pointerEvents;
+    this.host.addEventListener('webglcontextlost', () => {
+      this.fail(new Error('The WebGL context was lost.'));
+    }, { capture: true, signal });
     const { x: width, y: height } = viewer.viewport.getContainerSize();
     const { modelMatrix, viewState } = getOsdTransform(viewer.viewport, image);
     this.modelMatrix = modelMatrix;
-    this.deck = new Deck({
-      parent: this.host,
-      deviceProps: {
-        // A device created after finalize can still observe its detached canvas.
-        onVisibilityChange: (context) => {
-          if (this.destroyed) context.destroy();
+    parent.append(this.host);
+    try {
+      this.deck = new Deck({
+        parent: this.host,
+        deviceProps: {
+          // A device created after finalize can still observe its detached canvas.
+          onVisibilityChange: (context) => {
+            if (this.destroyed) context.destroy();
+          },
         },
-      },
-      views: new OrthographicView({ controller: false }),
-      width,
-      height,
-      onAfterRender: () => {
-        if (this.rendered) return;
-        this.rendered = true;
-        this.hover.refresh();
-      },
-      onResize: this.redraw,
-      viewState,
-      layers: this.orientedLayers(),
-    });
+        views: new OrthographicView({ controller: false }),
+        width,
+        height,
+        onAfterRender: () => {
+          if (this.rendered || this.failed) return;
+          this.rendered = true;
+          this.hover.refresh();
+        },
+        onResize: this.redraw,
+        onError: this.fail,
+        viewState,
+        layers: this.orientedLayers(),
+      });
+    } catch (error) {
+      this.destroyed = true;
+      this.pointerEvents.abort();
+      this.host.remove();
+      throw error;
+    }
 
-    const { signal } = this.pointerEvents;
     viewer.canvas.addEventListener('pointermove', this.onPointerMove, { signal });
     viewer.canvas.addEventListener('pointerleave', this.hover.leave, { signal });
     viewer.canvas.addEventListener('pointercancel', this.onPointerCancel, { signal });
@@ -79,19 +92,19 @@ export class DeckOverlay {
   }
 
   setLayers(layers: OverlayLayers) {
-    if (this.destroyed) return;
+    if (this.destroyed || this.failed) return;
     const [base] = layers;
     const [previous] = this.layers;
     const dataChanged = base.props.data !== previous.props.data;
     const visibilityChanged = base.props.visible !== previous.props.visible;
     if (dataChanged || visibilityChanged) this.rendered = false;
     this.layers = layers;
-    this.deck.setProps({ layers: this.orientedLayers() });
+    this.setDeckProps({ layers: this.orientedLayers() });
     if (dataChanged || (visibilityChanged && !base.props.visible)) this.hover.leave();
   }
 
   private get canPick() {
-    return this.rendered && this.layers[0].props.visible;
+    return this.rendered && !this.failed && !this.flipPending && this.layers[0].props.visible;
   }
 
   private pickPath({ x, y }: PointerPosition): ConfettiPath | null {
@@ -100,7 +113,12 @@ export class DeckOverlay {
     const localX = x - bounds.left;
     const localY = y - bounds.top;
     if (localX < 0 || localY < 0 || localX >= bounds.width || localY >= bounds.height) return null;
-    return this.deck.pickObject({ x: localX, y: localY, radius: 2 })?.object ?? null;
+    try {
+      return this.deck.pickObject({ x: localX, y: localY, radius: 2 })?.object ?? null;
+    } catch (error) {
+      this.fail(error);
+      return null;
+    }
   }
 
   private setHovered(path: ConfettiPath | null) {
@@ -109,7 +127,7 @@ export class DeckOverlay {
   }
 
   private readonly onClick = ({ quick, position }: OpenSeadragon.CanvasClickEvent) => {
-    if (!quick || this.gestureMoved || this.flipPending || !this.canPick) return;
+    if (!quick || this.gestureMoved || !this.canPick) return;
     const { left, top } = this.viewer.canvas.getBoundingClientRect();
     const { viewport } = this.viewer;
     // OSD reflects the click position for navigation before emitting canvas-click.
@@ -172,10 +190,24 @@ export class DeckOverlay {
   }
 
   private readonly redraw = () => {
-    if (this.rendered) this.deck.redraw();
+    if (!this.rendered || this.failed) return;
+    try {
+      this.deck.redraw();
+    } catch (error) {
+      this.fail(error);
+    }
   };
 
+  private setDeckProps(props: DeckProps<OrthographicView>) {
+    try {
+      this.deck.setProps(props);
+    } catch (error) {
+      this.fail(error);
+    }
+  }
+
   private readonly sync = () => {
+    if (this.failed) return;
     const { viewport } = this.viewer;
     const { x: width, y: height } = viewport.getContainerSize();
     const { modelMatrix, viewState } = getOsdTransform(viewport, this.image);
@@ -184,15 +216,26 @@ export class DeckOverlay {
       this.rendered = false;
       this.modelMatrix = modelMatrix;
       const layers = this.orientedLayers();
-      this.deck.setProps({ width, height, viewState, layers });
+      this.setDeckProps({ width, height, viewState, layers });
     } else {
-      this.deck.setProps({ width, height, viewState });
+      this.setDeckProps({ width, height, viewState });
       if (this.deck.width === width && this.deck.height === height) this.redraw();
     }
     if (this.flipPending) {
       this.flipPending = false;
       this.updateHoverBlock();
     }
+  };
+
+  private readonly fail = (error: unknown) => {
+    if (this.destroyed || this.failed) return;
+    this.failed = true;
+    // Deck may report an error while traversing live layer or render state.
+    queueMicrotask(() => {
+      if (this.destroyed) return;
+      this.destroy();
+      this.callbacks.onError(error);
+    });
   };
 
   readonly destroy = () => {
@@ -212,9 +255,17 @@ export class DeckOverlay {
     this.viewer.removeHandler('close', this.destroy);
     this.viewer.removeHandler('before-destroy', this.destroy);
     const context = this.deck.getCanvasContext();
-    this.deck.finalize();
-    context?.destroy();
-    this.host.remove();
-    this.callbacks.onDestroy();
+    try {
+      try {
+        this.deck.finalize();
+      } finally {
+        context?.destroy();
+      }
+    } catch (error) {
+      console.error('Could not dispose of the confetti overlay.', error);
+    } finally {
+      this.host.remove();
+      this.callbacks.onDestroy();
+    }
   };
 }
