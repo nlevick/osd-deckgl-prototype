@@ -32,12 +32,21 @@ export class DeckOverlay {
       height,
       onResize: () => this.deck.redraw(),
       viewState,
-      layers: this.layers.map((layer) => layer.clone({ modelMatrix })),
+      layers: this.orientedLayers(),
     });
 
     viewer.addHandler('update-viewport', this.sync);
     viewer.addHandler('close', this.destroy);
     viewer.addHandler('before-destroy', this.destroy);
+  }
+
+  setLayers(layers: Layer[]) {
+    this.layers = layers;
+    this.deck.setProps({ layers: this.orientedLayers() });
+  }
+
+  private orientedLayers() {
+    return this.layers.map((layer) => layer.clone({ modelMatrix: this.modelMatrix }));
   }
 
   private readonly sync = () => {
@@ -46,7 +55,7 @@ export class DeckOverlay {
     const { modelMatrix, viewState } = getOsdTransform(viewport, this.image);
     if (modelMatrix.some((value, index) => value !== this.modelMatrix[index])) {
       this.modelMatrix = modelMatrix;
-      const layers = this.layers.map((layer) => layer.clone({ modelMatrix }));
+      const layers = this.orientedLayers();
       this.deck.setProps({ width, height, viewState, layers });
     } else {
       this.deck.setProps({ width, height, viewState });
