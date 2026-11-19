@@ -1,5 +1,6 @@
 import './styles.css';
-import { PathLayer } from '@deck.gl/layers';
+import { generateConfetti } from './data/confetti';
+import { createConfettiLayer } from './layers/confettiLayer';
 import { connectCameraControls } from './ui/cameraControls';
 import { DeckOverlay } from './viewer/DeckOverlay';
 import { createViewer } from './viewer/createViewer';
@@ -28,23 +29,8 @@ viewer.addHandler('open', () => {
   const { x: width, y: height } = image.getContentSize();
   showImageStatus(`Loading Highsmith tiles (${width} × ${height})…`);
 
-  // Centers in full-resolution Highsmith pixels: central upper window,
-  // apex of the center doorway, and the left circular floor inlay.
-  const landmarks = [[3398, 850], [3438, 5648], [1526, 7680]];
-  const paths = landmarks.flatMap(([x, y]) => [
-    [[x - 105, y], [x + 105, y]],
-    [[x, y - 105], [x, y + 105]],
-  ]);
-  new DeckOverlay(scene, viewer, image, [
-    new PathLayer({
-      id: 'landmarks',
-      data: paths,
-      getPath: (path) => path,
-      getColor: [0, 240, 255],
-      getWidth: 2,
-      widthUnits: 'pixels',
-    }),
-  ]);
+  const data = generateConfetti(37, 10_000, width, height);
+  new DeckOverlay(scene, viewer, image, [createConfettiLayer(data)]);
 });
 viewer.addHandler('open-failed', () => showImageStatus('Could not open the Highsmith image.', true));
 viewer.addHandler('tile-load-failed', ({ tiledImage }) => {
