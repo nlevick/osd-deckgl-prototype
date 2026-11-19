@@ -1,4 +1,3 @@
-import './styles.css';
 import type OpenSeadragon from 'openseadragon';
 import { generateConfetti } from './data/confetti';
 import { createConfettiLayer } from './layers/confettiLayer';
@@ -10,6 +9,7 @@ import { createViewer } from './viewer/createViewer';
 import { highsmithDzi } from './viewer/imageSource';
 
 const imageStatus = document.querySelector<HTMLElement>('#image-status')!;
+const imageStatusPanel = imageStatus.parentElement!;
 const retry = document.querySelector<HTMLButtonElement>('#image-retry')!;
 const scene = document.querySelector<HTMLElement>('#scene')!;
 const viewer = createViewer(document.querySelector<HTMLElement>('#image-viewer')!);
@@ -34,30 +34,36 @@ function renderConfetti(image: OpenSeadragon.TiledImage) {
   }
 }
 
-function showImageStatus(message: string, canRetry = false) {
+function showImageStatus(message: string) {
+  if (imageStatus.textContent === message) return;
   imageStatus.textContent = message;
-  retry.hidden = !canRetry;
+  retry.hidden = message === '';
 }
 
 function openImage() {
-  showImageStatus('Loading Highsmith…');
+  showImageStatus('');
+  retry.hidden = true;
+  imageStatusPanel.append(retry);
   viewer.open({ tileSource: highsmithDzi });
 }
 
 viewer.addHandler('open', () => {
-  const image = viewer.world.getItemAt(0);
-  image.whenFullyLoaded(() => {
-    if (viewer.world.getItemAt(0) === image && retry.hidden) showImageStatus('');
-  });
-  const { x: width, y: height } = image.getContentSize();
-  showImageStatus(`Loading Highsmith tiles (${width} × ${height})…`);
-
-  renderConfetti(image);
+  renderConfetti(viewer.world.getItemAt(0));
 });
-viewer.addHandler('open-failed', () => showImageStatus('Could not open the Highsmith image.', true));
+viewer.addHandler('open-failed', () => {
+  // OpenSeadragon creates its centered failure message before app handlers run.
+  const message = viewer.container.querySelector('.openseadragon-message > div > div > div');
+  if (message) {
+    showImageStatus('');
+    message.append(retry);
+    retry.hidden = false;
+  } else {
+    showImageStatus('Unable to open the Highsmith image.');
+  }
+});
 viewer.addHandler('tile-load-failed', ({ tiledImage }) => {
   if (viewer.world.getItemAt(0) === tiledImage) {
-    showImageStatus('Some Highsmith tiles could not load.', true);
+    showImageStatus('Some Highsmith tiles could not load.');
   }
 });
 retry.addEventListener('click', openImage);

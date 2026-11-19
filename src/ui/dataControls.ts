@@ -4,9 +4,7 @@ export function connectDataControls(controls: HTMLFieldSetElement, onChange: () 
   const presets = controls.querySelector<HTMLSelectElement>('#path-count')!;
   const visibility = controls.querySelector<HTMLButtonElement>('#overlay-visible')!;
 
-  for (const count of pathCounts) {
-    presets.add(new Option(`${count / 1_000}k`, String(count)));
-  }
+  presets.replaceChildren(...pathCounts.map(count => new Option(`${count / 1_000}k`, String(count))));
   presets.value = String(viewerState.count);
   visibility.setAttribute('aria-pressed', String(viewerState.overlayVisible));
 
