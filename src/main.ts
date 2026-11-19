@@ -1,5 +1,6 @@
 import './styles.css';
 import { PathLayer } from '@deck.gl/layers';
+import { connectCameraControls } from './ui/cameraControls';
 import { DeckOverlay } from './viewer/DeckOverlay';
 import { createViewer } from './viewer/createViewer';
 import { highsmithDzi } from './viewer/imageSource';
@@ -53,4 +54,5 @@ viewer.addHandler('tile-load-failed', ({ tiledImage }) => {
 });
 retry.addEventListener('click', openImage);
 
+connectCameraControls(document.querySelector<HTMLFieldSetElement>('#camera-controls')!, viewer);
 openImage();

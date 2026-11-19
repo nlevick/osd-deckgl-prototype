@@ -52,3 +52,56 @@ a {
   overflow: hidden;
   pointer-events: none;
 }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.toolbar fieldset {
+  min-inline-size: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+button,
+select {
+  font: inherit;
+  color: inherit;
+  background: #222b39;
+  border: 1px solid #637288;
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.65rem;
+}
+
+button[aria-pressed="true"] {
+  background: #294568;
+  border-color: #a0c9ff;
+}
+
+button:enabled {
+  cursor: pointer;
+}
+
+button:enabled:hover,
+select:enabled:hover {
+  border-color: #a0c9ff;
+}
+
+button:disabled,
+select:disabled {
+  opacity: 0.6;
+}
+
+:focus-visible {
+  outline: 2px solid #a0c9ff;
+  outline-offset: 2px;
+}

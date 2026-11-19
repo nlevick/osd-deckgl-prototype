@@ -8,6 +8,16 @@
   <body>
     <main>
       <h1>OpenSeadragon + deck.gl</h1>
+      <div class="toolbar">
+        <fieldset id="camera-controls" aria-label="Camera" disabled>
+          <button type="button" id="home">Home</button>
+          <button type="button" id="zoom-in">Zoom in</button>
+          <button type="button" id="zoom-out">Zoom out</button>
+          <button type="button" id="rotate-left">Rotate left</button>
+          <button type="button" id="rotate-right">Rotate right</button>
+          <button type="button" id="flip" aria-pressed="false">Flip horizontal</button>
+        </fieldset>
+      </div>
       <div class="scene" id="scene">
         <div class="image-viewer" id="image-viewer" aria-label="Highsmith image viewer"></div>
       </div>
