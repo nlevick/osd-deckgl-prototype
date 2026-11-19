@@ -1,11 +1,20 @@
 import { Deck, OrthographicView, type Layer } from '@deck.gl/core';
 import type OpenSeadragon from 'openseadragon';
+import type { ConfettiPath } from '../data/confetti';
+import { createHover, type PointerPosition } from './hover';
 import { getOsdTransform } from './osdTransform';
 
 export class DeckOverlay {
   private readonly host = document.createElement('div');
   private readonly deck: Deck<OrthographicView>;
+  private readonly pointerEvents = new AbortController();
+  private readonly hover = createHover(
+    (position) => this.setHovered(this.pickPath(position)),
+    () => this.setHovered(null),
+  );
   private modelMatrix: Float64Array;
+  private dragging = false;
+  private animating = false;
   private destroyed = false;
 
   constructor(
@@ -30,11 +39,20 @@ export class DeckOverlay {
       views: new OrthographicView({ controller: false }),
       width,
       height,
+      onLoad: () => this.hover.refresh(),
       onResize: () => this.deck.redraw(),
       viewState,
       layers: this.orientedLayers(),
     });
 
+    const { signal } = this.pointerEvents;
+    viewer.canvas.addEventListener('pointermove', this.onPointerMove, { signal });
+    viewer.canvas.addEventListener('pointerleave', this.hover.leave, { signal });
+    viewer.canvas.addEventListener('pointercancel', this.onPointerCancel, { signal });
+    viewer.addHandler('canvas-drag', this.onDrag);
+    viewer.addHandler('canvas-drag-end', this.onDragEnd);
+    viewer.addHandler('animation-start', this.onAnimationStart);
+    viewer.addHandler('animation-finish', this.onAnimationFinish);
     viewer.addHandler('update-viewport', this.sync);
     viewer.addHandler('close', this.destroy);
     viewer.addHandler('before-destroy', this.destroy);
@@ -43,6 +61,52 @@ export class DeckOverlay {
   setLayers(layers: Layer[]) {
     this.layers = layers;
     this.deck.setProps({ layers: this.orientedLayers() });
+  }
+
+  private pickPath({ x, y }: PointerPosition): ConfettiPath | null {
+    if (!this.deck.isInitialized) return null;
+    const bounds = this.host.getBoundingClientRect();
+    const localX = x - bounds.left;
+    const localY = y - bounds.top;
+    if (localX < 0 || localY < 0 || localX >= bounds.width || localY >= bounds.height) return null;
+    return this.deck.pickObject({ x: localX, y: localY, radius: 2 })?.object ?? null;
+  }
+
+  private setHovered(path: ConfettiPath | null) {
+    this.viewer.canvas.classList.toggle('has-hovered-path', path !== null);
+  }
+
+  private readonly onPointerMove = (event: PointerEvent) => {
+    if (event.pointerType !== 'touch') this.hover.move({ x: event.clientX, y: event.clientY });
+  };
+
+  private readonly onPointerCancel = () => {
+    this.hover.leave();
+    this.onDragEnd();
+  };
+
+  private readonly onDrag = () => {
+    this.dragging = true;
+    this.updateHoverBlock();
+  };
+
+  private readonly onDragEnd = () => {
+    this.dragging = false;
+    this.updateHoverBlock();
+  };
+
+  private readonly onAnimationStart = () => {
+    this.animating = true;
+    this.updateHoverBlock();
+  };
+
+  private readonly onAnimationFinish = () => {
+    this.animating = false;
+    this.updateHoverBlock();
+  };
+
+  private updateHoverBlock() {
+    this.hover.setBlocked(this.dragging || this.animating);
   }
 
   private orientedLayers() {
@@ -57,6 +121,7 @@ export class DeckOverlay {
       this.modelMatrix = modelMatrix;
       const layers = this.orientedLayers();
       this.deck.setProps({ width, height, viewState, layers });
+      this.hover.refresh();
     } else {
       this.deck.setProps({ width, height, viewState });
       if (this.deck.width === width && this.deck.height === height) this.deck.redraw();
@@ -66,6 +131,12 @@ export class DeckOverlay {
   readonly destroy = () => {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.pointerEvents.abort();
+    this.hover.leave();
+    this.viewer.removeHandler('canvas-drag', this.onDrag);
+    this.viewer.removeHandler('canvas-drag-end', this.onDragEnd);
+    this.viewer.removeHandler('animation-start', this.onAnimationStart);
+    this.viewer.removeHandler('animation-finish', this.onAnimationFinish);
     this.viewer.removeHandler('update-viewport', this.sync);
     this.viewer.removeHandler('close', this.destroy);
     this.viewer.removeHandler('before-destroy', this.destroy);

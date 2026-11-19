@@ -11,5 +11,6 @@ export function createConfettiLayer(data: ConfettiPath[]) {
     getWidth: 1.25,
     widthUnits: 'pixels',
     opacity: 0.65,
+    pickable: true,
   });
 }
