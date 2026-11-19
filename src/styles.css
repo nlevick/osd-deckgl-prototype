@@ -45,3 +45,10 @@ h1 {
 a {
   color: #a0c9ff;
 }
+
+.deck-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
