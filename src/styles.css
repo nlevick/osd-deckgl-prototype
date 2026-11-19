@@ -31,3 +31,17 @@ h1 {
   position: absolute;
   inset: 0;
 }
+
+.image-status,
+.image-credit {
+  margin: 0.75rem 0 0;
+  color: #aebbc9;
+}
+
+.image-status:has(:empty + [hidden]) {
+  display: none;
+}
+
+a {
+  color: #a0c9ff;
+}
