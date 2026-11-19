@@ -18,17 +18,25 @@ export let viewerState: ViewerState = {
 };
 
 export function setPathCount(count: PathCount) {
-  viewerState = { ...viewerState, count };
+  if (count === viewerState.count) return false;
+  viewerState = { ...viewerState, count, selectedId: null };
+  return true;
 }
 
 export function setOverlayVisible(overlayVisible: boolean) {
-  viewerState = { ...viewerState, overlayVisible };
+  if (overlayVisible === viewerState.overlayVisible) return false;
+  viewerState = { ...viewerState, overlayVisible, selectedId: null };
+  return true;
 }
 
 export function setHoveredId(hoveredId: string | null) {
+  if (hoveredId === viewerState.hoveredId) return false;
   viewerState = { ...viewerState, hoveredId };
+  return true;
 }
 
 export function setSelectedId(selectedId: string | null) {
+  if (selectedId === viewerState.selectedId) return false;
   viewerState = { ...viewerState, selectedId };
+  return true;
 }

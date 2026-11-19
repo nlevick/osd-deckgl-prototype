@@ -1,6 +1,10 @@
 import { pathCounts, setOverlayVisible, setPathCount, viewerState } from '../state';
 
-export function connectDataControls(controls: HTMLFieldSetElement, onChange: () => void) {
+export function connectDataControls(
+  controls: HTMLFieldSetElement,
+  onChange: () => void,
+  signal: AbortSignal,
+) {
   const presets = controls.querySelector<HTMLSelectElement>('#path-count')!;
   const visibility = controls.querySelector<HTMLButtonElement>('#overlay-visible')!;
 
@@ -10,13 +14,11 @@ export function connectDataControls(controls: HTMLFieldSetElement, onChange: () 
 
   presets.addEventListener('change', () => {
     const count = pathCounts.find((preset) => String(preset) === presets.value);
-    if (count === undefined) return;
-    setPathCount(count);
-    onChange();
-  });
+    if (count !== undefined && setPathCount(count)) onChange();
+  }, { signal });
   visibility.addEventListener('click', () => {
     setOverlayVisible(!viewerState.overlayVisible);
     visibility.setAttribute('aria-pressed', String(viewerState.overlayVisible));
     onChange();
-  });
+  }, { signal });
 }

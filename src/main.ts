@@ -5,7 +5,7 @@ import { setHoveredId, setSelectedId, viewerState } from './state';
 import { connectDataControls } from './ui/dataControls';
 import { connectCameraControls } from './ui/cameraControls';
 import { connectSelectionReadout } from './ui/selectionReadout';
-import { DeckOverlay } from './viewer/DeckOverlay';
+import { DeckOverlay, type OverlayLayers } from './viewer/DeckOverlay';
 import { createViewer } from './viewer/createViewer';
 import { createEmphasisLayers } from './viewer/emphasis';
 import { highsmithDzi } from './viewer/imageSource';
@@ -15,9 +15,10 @@ const imageStatusPanel = imageStatus.parentElement!;
 const retry = document.querySelector<HTMLButtonElement>('#image-retry')!;
 const scene = document.querySelector<HTMLElement>('#scene')!;
 const viewer = createViewer(document.querySelector<HTMLElement>('#image-viewer')!);
+const controls = new AbortController();
+viewer.addHandler('before-destroy', () => controls.abort());
 
 let overlay: DeckOverlay | undefined;
-viewer.addHandler('close', () => { overlay = undefined; });
 type Dataset = {
   key: string;
   layer: ReturnType<typeof createConfettiLayer>;
@@ -28,9 +29,10 @@ let dataset: Dataset | undefined;
 const showSelection = connectSelectionReadout(
   document.querySelector<HTMLFieldSetElement>('#data-controls')!,
   () => selectPath(null),
+  controls.signal,
 );
 
-function getLayers({ layer, pathsById }: Dataset) {
+function getLayers({ layer, pathsById }: Dataset): OverlayLayers {
   const { overlayVisible, hoveredId, selectedId } = viewerState;
   if (!overlayVisible) return [layer.clone({ visible: false })];
   const hovered = hoveredId === null ? undefined : pathsById.get(hoveredId);
@@ -39,16 +41,19 @@ function getLayers({ layer, pathsById }: Dataset) {
 }
 
 function hoverPath(id: string | null) {
-  if (id === viewerState.hoveredId) return;
-  setHoveredId(id);
-  if (overlay && dataset) overlay.setLayers(getLayers(dataset));
+  if (setHoveredId(id) && overlay && dataset) overlay.setLayers(getLayers(dataset));
 }
 
 function selectPath(id: string | null) {
-  if (id === viewerState.selectedId) return;
-  setSelectedId(id);
-  showSelection(id);
-  if (overlay && dataset) overlay.setLayers(getLayers(dataset));
+  if (setSelectedId(id)) {
+    showSelection(id);
+    if (overlay && dataset) overlay.setLayers(getLayers(dataset));
+  }
+}
+
+function resetInteraction() {
+  overlay = undefined;
+  selectPath(null);
 }
 
 function renderConfetti(image: OpenSeadragon.TiledImage) {
@@ -62,13 +67,19 @@ function renderConfetti(image: OpenSeadragon.TiledImage) {
       layer: createConfettiLayer(paths),
       pathsById: new Map(paths.map(path => [path.id, path])),
     };
+    setHoveredId(null);
   }
 
+  if (!viewerState.overlayVisible) setHoveredId(null);
   const layers = getLayers(dataset);
   if (overlay) {
     overlay.setLayers(layers);
   } else {
-    overlay = new DeckOverlay(scene, viewer, image, layers, hoverPath, selectPath);
+    overlay = new DeckOverlay(scene, viewer, image, layers, {
+      onHover: hoverPath,
+      onSelect: selectPath,
+      onDestroy: resetInteraction,
+    });
   }
 }
 
@@ -108,7 +119,8 @@ retry.addEventListener('click', openImage);
 
 connectCameraControls(document.querySelector<HTMLFieldSetElement>('#camera-controls')!, viewer);
 connectDataControls(document.querySelector<HTMLFieldSetElement>('#data-controls')!, () => {
+  showSelection(null);
   const image = viewer.world.getItemAt(0);
   if (image) renderConfetti(image);
-});
+}, controls.signal);
 openImage();
