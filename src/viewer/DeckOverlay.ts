@@ -22,6 +22,8 @@ export class DeckOverlay {
     private readonly viewer: OpenSeadragon.Viewer,
     private readonly image: OpenSeadragon.TiledImage,
     private layers: Layer[],
+    private readonly onHover: (id: string | null) => void,
+    private readonly onSelect: (id: string | null) => void,
   ) {
     this.host.className = 'deck-overlay';
     parent.append(this.host);
@@ -49,6 +51,7 @@ export class DeckOverlay {
     viewer.canvas.addEventListener('pointermove', this.onPointerMove, { signal });
     viewer.canvas.addEventListener('pointerleave', this.hover.leave, { signal });
     viewer.canvas.addEventListener('pointercancel', this.onPointerCancel, { signal });
+    viewer.addHandler('canvas-click', this.onClick);
     viewer.addHandler('canvas-drag', this.onDrag);
     viewer.addHandler('canvas-drag-end', this.onDragEnd);
     viewer.addHandler('animation-start', this.onAnimationStart);
@@ -59,6 +62,7 @@ export class DeckOverlay {
   }
 
   setLayers(layers: Layer[]) {
+    if (this.destroyed) return;
     this.layers = layers;
     this.deck.setProps({ layers: this.orientedLayers() });
   }
@@ -74,7 +78,18 @@ export class DeckOverlay {
 
   private setHovered(path: ConfettiPath | null) {
     this.viewer.canvas.classList.toggle('has-hovered-path', path !== null);
+    this.onHover(path?.id ?? null);
   }
+
+  private readonly onClick = ({ quick, position }: OpenSeadragon.CanvasClickEvent) => {
+    if (!quick || !this.deck.isInitialized) return;
+    const { left, top } = this.viewer.canvas.getBoundingClientRect();
+    const { viewport } = this.viewer;
+    // OSD reflects the click position for navigation before emitting canvas-click.
+    const x = viewport.getFlip() ? viewport.getContainerSize().x - position.x : position.x;
+    const picked = this.pickPath({ x: left + x, y: top + position.y });
+    this.onSelect(picked?.id ?? null);
+  };
 
   private readonly onPointerMove = (event: PointerEvent) => {
     if (event.pointerType !== 'touch') this.hover.move({ x: event.clientX, y: event.clientY });
@@ -133,6 +148,7 @@ export class DeckOverlay {
     this.destroyed = true;
     this.pointerEvents.abort();
     this.hover.leave();
+    this.viewer.removeHandler('canvas-click', this.onClick);
     this.viewer.removeHandler('canvas-drag', this.onDrag);
     this.viewer.removeHandler('canvas-drag-end', this.onDragEnd);
     this.viewer.removeHandler('animation-start', this.onAnimationStart);

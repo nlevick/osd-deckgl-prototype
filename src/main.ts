@@ -1,11 +1,13 @@
 import type OpenSeadragon from 'openseadragon';
-import { generateConfetti } from './data/confetti';
+import { generateConfetti, type ConfettiPath } from './data/confetti';
 import { createConfettiLayer } from './layers/confettiLayer';
-import { viewerState } from './state';
+import { setHoveredId, setSelectedId, viewerState } from './state';
 import { connectDataControls } from './ui/dataControls';
 import { connectCameraControls } from './ui/cameraControls';
+import { connectSelectionReadout } from './ui/selectionReadout';
 import { DeckOverlay } from './viewer/DeckOverlay';
 import { createViewer } from './viewer/createViewer';
+import { createEmphasisLayers } from './viewer/emphasis';
 import { highsmithDzi } from './viewer/imageSource';
 
 const imageStatus = document.querySelector<HTMLElement>('#image-status')!;
@@ -16,21 +18,57 @@ const viewer = createViewer(document.querySelector<HTMLElement>('#image-viewer')
 
 let overlay: DeckOverlay | undefined;
 viewer.addHandler('close', () => { overlay = undefined; });
-let dataset: { key: string; layer: ReturnType<typeof createConfettiLayer> } | undefined;
+type Dataset = {
+  key: string;
+  layer: ReturnType<typeof createConfettiLayer>;
+  pathsById: Map<string, ConfettiPath>;
+};
+let dataset: Dataset | undefined;
+
+const showSelection = connectSelectionReadout(
+  document.querySelector<HTMLFieldSetElement>('#data-controls')!,
+  () => selectPath(null),
+);
+
+function getLayers({ layer, pathsById }: Dataset) {
+  const { overlayVisible, hoveredId, selectedId } = viewerState;
+  if (!overlayVisible) return [layer.clone({ visible: false })];
+  const hovered = hoveredId === null ? undefined : pathsById.get(hoveredId);
+  const selected = selectedId === null ? undefined : pathsById.get(selectedId);
+  return [layer, ...createEmphasisLayers(layer, hovered, selected)];
+}
+
+function hoverPath(id: string | null) {
+  if (id === viewerState.hoveredId) return;
+  setHoveredId(id);
+  if (overlay && dataset) overlay.setLayers(getLayers(dataset));
+}
+
+function selectPath(id: string | null) {
+  if (id === viewerState.selectedId) return;
+  setSelectedId(id);
+  showSelection(id);
+  if (overlay && dataset) overlay.setLayers(getLayers(dataset));
+}
 
 function renderConfetti(image: OpenSeadragon.TiledImage) {
   const { x: width, y: height } = image.getContentSize();
-  const { count, seed, overlayVisible } = viewerState;
+  const { count, seed } = viewerState;
   const key = `${seed}:${count}:${width}:${height}`;
   if (dataset?.key !== key) {
-    dataset = { key, layer: createConfettiLayer(generateConfetti(seed, count, width, height)) };
+    const paths = generateConfetti(seed, count, width, height);
+    dataset = {
+      key,
+      layer: createConfettiLayer(paths),
+      pathsById: new Map(paths.map(path => [path.id, path])),
+    };
   }
 
-  const layers = [dataset.layer.clone({ visible: overlayVisible })];
+  const layers = getLayers(dataset);
   if (overlay) {
     overlay.setLayers(layers);
   } else {
-    overlay = new DeckOverlay(scene, viewer, image, layers);
+    overlay = new DeckOverlay(scene, viewer, image, layers, hoverPath, selectPath);
   }
 }
 

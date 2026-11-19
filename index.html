@@ -48,6 +48,15 @@
         cursor: pointer;
       }
 
+      .visually-hidden {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
       .image-status {
         color: #aebbc9;
         overflow-wrap: anywhere;
@@ -174,7 +183,9 @@
         </fieldset>
         <fieldset id="data-controls" aria-label="Confetti">
           <label>Paths <select id="path-count"><option value="10000">10k</option></select></label>
+          <button id="clear-selection" type="button">Clear selection</button>
           <button type="button" id="overlay-visible" aria-pressed="true">Show overlay</button>
+          <span class="visually-hidden" id="selection-status" role="status">No path selected</span>
         </fieldset>
       </div>
       <div class="scene" id="scene">
