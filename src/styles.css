@@ -1,0 +1,33 @@
+:root {
+  color-scheme: dark;
+  font: 1rem/1.5 system-ui, sans-serif;
+  color: #edf1f7;
+  background: #11151c;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: clamp(0.75rem, 3vw, 2rem);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.scene {
+  position: relative;
+  height: clamp(18rem, 74vh, 65rem);
+  background: #080a0f;
+  outline: 1px solid #414c5c;
+}
+
+.image-viewer {
+  position: absolute;
+  inset: 0;
+}
