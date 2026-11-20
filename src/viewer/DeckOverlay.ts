@@ -7,8 +7,8 @@ import { getOsdTransform } from './osdTransform';
 export type OverlayLayers = [Layer, ...Layer[]];
 
 type InteractionCallbacks = {
-  onHover: (id: string | null) => void;
-  onSelect: (id: string | null) => void;
+  onHover: (path: ConfettiPath | null) => void;
+  onSelect: (path: ConfettiPath | null) => void;
   onDestroy: () => void;
   onError: (error: unknown) => void;
 };
@@ -123,7 +123,7 @@ export class DeckOverlay {
 
   private setHovered(path: ConfettiPath | null) {
     this.viewer.canvas.classList.toggle('has-hovered-path', path !== null);
-    this.callbacks.onHover(path?.id ?? null);
+    this.callbacks.onHover(path);
   }
 
   private readonly onClick = ({ quick, position }: OpenSeadragon.CanvasClickEvent) => {
@@ -133,7 +133,7 @@ export class DeckOverlay {
     // OSD reflects the click position for navigation before emitting canvas-click.
     const x = viewport.getFlip() ? viewport.getContainerSize().x - position.x : position.x;
     const picked = this.pickPath({ x: left + x, y: top + position.y });
-    this.callbacks.onSelect(picked?.id ?? null);
+    this.callbacks.onSelect(picked);
   };
 
   private readonly onPointerMove = (event: PointerEvent) => {

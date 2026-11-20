@@ -3,8 +3,8 @@ import type { ConfettiPath } from '../data/confetti';
 
 export function createEmphasisLayers(
   base: ReturnType<typeof createConfettiLayer>,
-  hovered: ConfettiPath | undefined,
-  selected: ConfettiPath | undefined,
+  hovered: ConfettiPath | null,
+  selected: ConfettiPath | null,
 ) {
   const layers: typeof base[] = [];
   if (hovered && hovered.id !== selected?.id) {

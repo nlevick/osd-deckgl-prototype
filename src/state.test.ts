@@ -1,24 +1,30 @@
 import { describe, expect, it } from 'vitest';
-import { setOverlayVisible, setPathCount, setSelectedId, viewerState } from './state';
+import type { ConfettiPath } from './data/confetti';
+import { ViewerState } from './state';
 
-describe('selection when changing overlay settings', () => {
-  it('clears a selected ID even when it exists at the new path count', () => {
-    setPathCount(10_000);
-    setSelectedId('37:1');
+const selectedPath: ConfettiPath = { id: '37:1', positions: [0, 0, 1, 1], color: [255, 0, 0] };
 
-    setPathCount(50_000);
+describe('interaction when changing overlay settings', () => {
+  it('clears selection and hover even when the paths exist at the new count', () => {
+    const state = new ViewerState();
+    state.selected = selectedPath;
+    state.hovered = { ...selectedPath, id: '37:2' };
 
-    expect(viewerState.count).toBe(50_000);
-    expect(viewerState.selectedId).toBeNull();
+    state.setSettings({ ...state.settings, count: 50_000 });
+
+    expect(state.settings.count).toBe(50_000);
+    expect(state.selected).toBeNull();
+    expect(state.hovered).toBeNull();
   });
 
   it.each([false, true])('clears selection when overlay visibility changes to %s', (visible) => {
-    setOverlayVisible(!visible);
-    setSelectedId('37:1');
+    const state = new ViewerState();
+    state.setSettings({ ...state.settings, visible: !visible });
+    state.selected = selectedPath;
 
-    setOverlayVisible(visible);
+    state.setSettings({ ...state.settings, visible });
 
-    expect(viewerState.overlayVisible).toBe(visible);
-    expect(viewerState.selectedId).toBeNull();
+    expect(state.settings.visible).toBe(visible);
+    expect(state.selected).toBeNull();
   });
 });

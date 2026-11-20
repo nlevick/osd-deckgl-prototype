@@ -1,42 +1,23 @@
-export const pathCounts = [10_000, 50_000, 200_000] as const;
-type PathCount = (typeof pathCounts)[number];
+import type { ConfettiPath } from './data/confetti';
 
-type ViewerState = Readonly<{
-  seed: number;
+export const pathCounts = [10_000, 50_000, 200_000] as const;
+export type PathCount = (typeof pathCounts)[number];
+
+export type OverlaySettings = Readonly<{
   count: PathCount;
-  overlayVisible: boolean;
-  hoveredId: string | null;
-  selectedId: string | null;
+  visible: boolean;
 }>;
 
-export let viewerState: ViewerState = {
-  seed: 37,
-  count: 10_000,
-  overlayVisible: true,
-  hoveredId: null,
-  selectedId: null,
-};
+export class ViewerState {
+  settings: OverlaySettings = { count: pathCounts[0], visible: true };
+  hovered: ConfettiPath | null = null;
+  selected: ConfettiPath | null = null;
 
-export function setPathCount(count: PathCount) {
-  if (count === viewerState.count) return false;
-  viewerState = { ...viewerState, count, selectedId: null };
-  return true;
-}
-
-export function setOverlayVisible(overlayVisible: boolean) {
-  if (overlayVisible === viewerState.overlayVisible) return false;
-  viewerState = { ...viewerState, overlayVisible, selectedId: null };
-  return true;
-}
-
-export function setHoveredId(hoveredId: string | null) {
-  if (hoveredId === viewerState.hoveredId) return false;
-  viewerState = { ...viewerState, hoveredId };
-  return true;
-}
-
-export function setSelectedId(selectedId: string | null) {
-  if (selectedId === viewerState.selectedId) return false;
-  viewerState = { ...viewerState, selectedId };
-  return true;
+  setSettings(settings: OverlaySettings) {
+    if (settings.count === this.settings.count && settings.visible === this.settings.visible) return false;
+    this.settings = settings;
+    this.hovered = null;
+    this.selected = null;
+    return true;
+  }
 }
