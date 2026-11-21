@@ -14,18 +14,16 @@ In an earlier polygon benchmark, rendering and picking performed similarly with 
 
 ![Zoomed-in demo image with colored confetti paths and the 10k preset selected](docs/viewer.png)
 
-## Run locally
+## Local run
 
-Use Node.js 22.12 or later in the 22.x series, Node.js 24, or Node.js 26, with npm.
+Use Node.js 22.12 or later with npm.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open the local URL Vite prints. The viewer needs network access to the demo image's Deep Zoom Image (DZI) descriptor and tiles.
-
-Image request failures show a **Retry image** button. [OpenSeadragon DZI example](https://openseadragon.github.io/examples/tilesource-dzi/)
+Open the local URL Vite prints. The viewer needs network access to fetch the Deep Zoom Image (DZI) descriptor and tiles used in [OpenSeadragon's Highsmith example](https://openseadragon.github.io/examples/tilesource-dzi/). If an image request fails, click **Retry image**.
 
 The overlay requires WebGL2. If the overlay fails, the image viewer and its navigation controls remain available.
 
@@ -37,7 +35,7 @@ The overlay requires WebGL2. If the overlay fails, the image viewer and its navi
 
 - Use **Paths** to switch between 10k, 50k, and 200k paths. **Show overlay** toggles the confetti. Changing either setting clears the selection.
 
-## Checks and production build
+## Production build
 
 ```sh
 npm run typecheck
