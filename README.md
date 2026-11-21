@@ -2,11 +2,15 @@
 
 A deep-zoom image viewer with an interactive vector overlay. OpenSeadragon loads and navigates a tiled photograph. deck.gl draws seeded confetti paths that stay aligned with the image as you pan, zoom, rotate, or flip it.
 
+**[Live demo](https://nlevick.github.io/osd-deckgl-prototype/)**
+
 ## Motivation
 
 I built a D3 and SVG annotation overlay for a production deep-zoom viewer that handled up to 10,000 annotations. When new requirements called for hundreds of thousands of complex annotations, I explored GPU-accelerated rendering with deck.gl.
 
 Moving both tiles and annotations to deck.gl would have required rewriting the viewer. This prototype tests a smaller migration. OpenSeadragon still handles tiles and navigation, so the existing viewer can keep its custom features. deck.gl draws and picks synthetic annotation paths while following OpenSeadragon’s camera.
+
+In an earlier polygon benchmark, rendering and picking performed similarly with OpenSeadragon driving the camera and with deck.gl on its own (camera sync took about 2 ms at the 95th percentile).
 
 ![Zoomed-in demo image with colored confetti paths and the 10k preset selected](docs/viewer.png)
 
