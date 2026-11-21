@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>OpenSeadragon + deck.gl</title>
+    <script type="module" crossorigin src="/osd-deckgl-prototype/assets/index-SVLppwmf.js"></script>
+    <link rel="modulepreload" crossorigin href="/osd-deckgl-prototype/assets/array-utils-flat-BL8Cekj1.js">
+    <link rel="modulepreload" crossorigin href="/osd-deckgl-prototype/assets/get-attribute-from-layouts-Dd2gixpo.js">
+    <link rel="modulepreload" crossorigin href="/osd-deckgl-prototype/assets/expression-C4x9yiMU.js">
+    <link rel="stylesheet" crossorigin href="/osd-deckgl-prototype/assets/index-BSNnl4Q5.css">
+  </head>
+  <body>
+    <main>
+      <h1>OpenSeadragon + deck.gl</h1>
+      <p class="subtitle">
+        OpenSeadragon viewport events keep deck.gl annotations aligned with the
+        tiled image
+      </p>
+      <div class="toolbar">
+        <fieldset id="camera-controls" aria-label="Camera" disabled>
+          <button type="button" id="home">Home</button>
+          <button type="button" id="zoom-in">Zoom in</button>
+          <button type="button" id="zoom-out">Zoom out</button>
+          <button type="button" id="rotate-left">Rotate left</button>
+          <button type="button" id="rotate-right">Rotate right</button>
+          <button type="button" id="flip" aria-pressed="false">
+            Flip horizontal
+          </button>
+        </fieldset>
+        <fieldset id="data-controls" aria-label="Confetti">
+          <label
+            >Paths
+            <select id="path-count">
+              <option value="10000">10k</option>
+            </select></label
+          >
+          <button id="clear-selection" type="button">Clear selection</button>
+          <button type="button" id="overlay-visible" aria-pressed="true">
+            Show overlay
+          </button>
+          <span class="visually-hidden" id="selection-status" role="status"
+            >No path selected</span
+          >
+        </fieldset>
+        <p id="graphics-status" role="status"></p>
+      </div>
+      <div class="scene" id="scene">
+        <div
+          class="image-viewer"
+          id="image-viewer"
+          aria-label="Deep-zoom image viewer"
+        ></div>
+        <div class="image-status">
+          <span id="image-status" role="status"></span>
+          <button id="image-retry" type="button" hidden>Retry image</button>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
