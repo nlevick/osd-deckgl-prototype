@@ -39,4 +39,4 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## Demo image
 
-Highsmith photograph from the [OpenSeadragon DZI example](https://openseadragon.github.io/examples/tilesource-dzi/).
+The demo uses a photograph from the [OpenSeadragon DZI example](https://openseadragon.github.io/examples/tilesource-dzi/).

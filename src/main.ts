@@ -1,21 +1,22 @@
-import type OpenSeadragon from 'openseadragon';
-import { generateConfetti, type ConfettiPath } from './data/confetti';
-import { createConfettiLayer } from './layers/confettiLayer';
-import { ViewerState, type OverlaySettings } from './state';
-import { connectDataControls } from './ui/dataControls';
-import { connectCameraControls } from './ui/cameraControls';
-import { connectSelectionReadout } from './ui/selectionReadout';
-import { DeckOverlay, type OverlayLayers } from './viewer/DeckOverlay';
-import { createViewer } from './viewer/createViewer';
-import { createEmphasisLayers } from './viewer/emphasis';
-import { highsmithDzi } from './viewer/imageSource';
+import type OpenSeadragon from "openseadragon";
+import { generateConfetti, type ConfettiPath } from "./data/confetti";
+import { createConfettiLayer } from "./layers/confettiLayer";
+import { ViewerState, type OverlaySettings } from "./state";
+import { connectDataControls } from "./ui/dataControls";
+import { connectCameraControls } from "./ui/cameraControls";
+import { connectSelectionReadout } from "./ui/selectionReadout";
+import { DeckOverlay, type OverlayLayers } from "./viewer/DeckOverlay";
+import { createViewer } from "./viewer/createViewer";
+import { createEmphasisLayers } from "./viewer/emphasis";
+import { demoImageDzi } from "./viewer/imageSource";
 
-const imageStatus = document.querySelector<HTMLElement>('#image-status')!;
-const graphicsStatus = document.querySelector<HTMLElement>('#graphics-status')!;
-const retry = document.querySelector<HTMLButtonElement>('#image-retry')!;
-const scene = document.querySelector<HTMLElement>('#scene')!;
-const dataControls = document.querySelector<HTMLFieldSetElement>('#data-controls')!;
-const imageViewer = document.querySelector<HTMLElement>('#image-viewer')!;
+const imageStatus = document.querySelector<HTMLElement>("#image-status")!;
+const graphicsStatus = document.querySelector<HTMLElement>("#graphics-status")!;
+const retry = document.querySelector<HTMLButtonElement>("#image-retry")!;
+const scene = document.querySelector<HTMLElement>("#scene")!;
+const dataControls =
+  document.querySelector<HTMLFieldSetElement>("#data-controls")!;
+const imageViewer = document.querySelector<HTMLElement>("#image-viewer")!;
 const viewer = createViewer(imageViewer);
 const controls = new AbortController();
 const state = new ViewerState();
@@ -28,7 +29,7 @@ type Dataset = {
 let dataset: Dataset | undefined;
 let overlay: DeckOverlay | undefined;
 
-viewer.addHandler('before-destroy', () => {
+viewer.addHandler("before-destroy", () => {
   controls.abort();
   dataset = undefined;
 });
@@ -107,38 +108,42 @@ function renderConfetti(image: OpenSeadragon.TiledImage) {
 }
 
 function showGraphicsError(error: unknown) {
-  console.error('The WebGL overlay is unavailable', error);
+  console.error("The WebGL overlay is unavailable", error);
   dataControls.hidden = true;
-  graphicsStatus.textContent = 'The WebGL overlay is unavailable';
+  graphicsStatus.textContent = "The WebGL overlay is unavailable";
 }
 
 function showImageStatus(message: string, imageUnavailable = false) {
   if (imageStatus.textContent !== message) imageStatus.textContent = message;
-  imageViewer.style.visibility = imageUnavailable ? 'hidden' : '';
-  retry.hidden = message === '';
+  imageViewer.classList.toggle("is-unavailable", imageUnavailable);
+  retry.hidden = message === "";
 }
 
 function openImage() {
-  showImageStatus('');
-  graphicsStatus.textContent = '';
+  showImageStatus("");
+  graphicsStatus.textContent = "";
   dataControls.hidden = false;
-  viewer.open({ tileSource: highsmithDzi });
+  viewer.open({ tileSource: demoImageDzi });
 }
 
-viewer.addHandler('open', () => {
+viewer.addHandler("open", () => {
   renderConfetti(viewer.world.getItemAt(0));
 });
-viewer.addHandler('open-failed', () => {
-  showImageStatus('Unable to open image.', true);
+viewer.addHandler("open-failed", () => {
+  showImageStatus("Unable to open image.", true);
 });
-viewer.addHandler('tile-load-failed', ({ tiledImage }) => {
+viewer.addHandler("tile-load-failed", ({ tiledImage }) => {
   if (viewer.world.getItemAt(0) === tiledImage) {
-    showImageStatus('Some Highsmith tiles could not load.');
+    showImageStatus("Some image tiles could not load.");
   }
 });
-retry.addEventListener('click', openImage, { signal: controls.signal });
+retry.addEventListener("click", openImage, { signal: controls.signal });
 
-connectCameraControls(document.querySelector<HTMLFieldSetElement>('#camera-controls')!, viewer, controls.signal);
+connectCameraControls(
+  document.querySelector<HTMLFieldSetElement>("#camera-controls")!,
+  viewer,
+  controls.signal,
+);
 connectDataControls(
   dataControls,
   state.settings,

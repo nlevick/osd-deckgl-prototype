@@ -1,0 +1,172 @@
+:root {
+  color-scheme: dark;
+  background: #11151c;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+  color: #edf1f7;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 90rem;
+  margin: 0 auto;
+  padding: clamp(0.75rem, 3vw, 2rem);
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.subtitle {
+  margin: 0 0 1rem;
+  color: #aebbc9;
+}
+
+.scene {
+  position: relative;
+  height: clamp(18rem, 74vh, 65rem);
+  background: #080a0f;
+  outline: 1px solid #414c5c;
+}
+
+.image-viewer {
+  position: absolute;
+  inset: 0;
+}
+
+.image-viewer.is-unavailable {
+  visibility: hidden;
+}
+
+.image-viewer .has-hovered-path {
+  cursor: pointer;
+}
+
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+#graphics-status,
+.image-status {
+  color: #aebbc9;
+  overflow-wrap: anywhere;
+}
+
+#graphics-status {
+  margin: 0 0 0 auto;
+}
+
+#graphics-status:empty {
+  position: absolute;
+}
+
+.image-status {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+  pointer-events: none;
+}
+
+#image-status:not(:empty) {
+  padding: 0.25rem 0.5rem;
+  background: #080a0f;
+}
+
+#image-retry {
+  pointer-events: auto;
+}
+
+.deck-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.toolbar fieldset {
+  min-inline-size: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.toolbar fieldset[hidden] {
+  display: none;
+}
+
+button,
+select {
+  font: inherit;
+  color: inherit;
+  background: #222b39;
+  border: 1px solid #637288;
+  border-radius: 0.35rem;
+  padding: 0.3rem 0.65rem;
+}
+
+button[aria-pressed="true"] {
+  background: #294568;
+  border-color: #a0c9ff;
+}
+
+button:enabled {
+  cursor: pointer;
+}
+
+button:enabled:hover,
+select:enabled:hover {
+  border-color: #a0c9ff;
+}
+
+button:disabled,
+select:disabled {
+  opacity: 0.6;
+}
+
+:focus-visible {
+  outline: 2px solid #a0c9ff;
+  outline-offset: 2px;
+}
+
+#data-controls {
+  margin-inline-start: auto;
+  column-gap: 0.75rem;
+}
+
+#data-controls label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+#path-count {
+  inline-size: 5.25rem;
+}
